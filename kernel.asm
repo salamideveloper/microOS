@@ -7,11 +7,11 @@ ARG_MAX             equ 10
 ARG_SIZE            equ 32
 
 %macro print 1 
-    jmp %%after ; if macro's didnt exist, i would personally visit the assembly woman's residence.
+    jmp %%after ; if macro's didnt exist, i would personally visit the assembly inventor´s residence.
     %%str db %1, 0
 %%after:
     mov si, %%str
-    call print_string ; i genuinely dont know what call fully does. i just saw it in a output manual.
+    call print_string ; the print_string function is still pretty outdated but im wayyy too lazy to change it
 %endmacro
 
 %macro newlineprint 1
@@ -63,6 +63,7 @@ kernel_main:
     newlineprint "                   "
     newlineprint "  /=====-----=====\"
     newlineprint "  |!! MICRO OS !!-|"
+    newlineprint "  |Codename: sig67|"
     newlineprint "  \=====-----=====/"
     newlineprint "                   "
     newlineprint "                   "
@@ -174,7 +175,7 @@ cmd_loaddriver:
     jne .no_quote
     inc si
 .no_quote:
-.read_fname:
+.read_fname: 
     mov al, [si]
     cmp al, 0
     je .fname_done
@@ -234,7 +235,7 @@ parse_driver_args:
     jne .no_space
     inc si
     jmp .skip_spaces
-.no_space:
+.no_space: ; the most autistic part of getting input of assembly, the manual claimed that this is the only way
     inc cx
     mov [ARG_TABLE_ADDR], cx
     add bx, ARG_SIZE
@@ -249,23 +250,22 @@ clear_arg_table:
     rep stosb
     ret
 
-commitkys: ; what a name, i had to think of something creative.
-    ; the most annoying but least shit way to shut a CPU down. straight autism.
-    mov ax, 0x5301      ; 0x5301 is a specific autistic ass port that connects to the APM registers inside x86 cpu's. tragic
-    xor bx, bx          ; APM bios specifically 
+commitkys: ; 
+    ; the most annoying but least shit way to shut a CPU down. This looks dumb.
+    mov ax, 0x5301      
+    xor bx, bx          
     int 0x15
     jc .fail            ; carry set becomes a big stinky disgusting error
 
-    ; state 0x0003 just means: fuck it, KYS. CPU. turn yourself off. make it painfull.
-    mov ax, 0x5307      ; the power state register in APM. still tragically autistic
-    mov bx, 0x0001      ; all devices, YES. EVERYTHING. kill everything and then commit KYS yourself
-    mov cx, 0x0003      ; KYS
+    ; state 0x0003 just means: fuck it, Go kill yourself. CPU. turn yourself off. make it painfull.
+    mov ax, 0x5307      
+    mov bx, 0x0001      
+    mov cx, 0x0003      
     int 0x15
     jc .fail
     .fail:
     ret
-    ; if it worked, theres no need to return. so jmp $ so just makes the CPU not commit autistic crimes.
-    jmp $
+    jmp $ ; nice
 
 
 do_load_driver:
@@ -345,16 +345,6 @@ clear_screen: ; DUDE WORK WHY WHY WHY WHY WHY
     ret
 
 appsmenu:
-    mov si, apps_str1
-    call print_string
-    mov si, apps_str2
-    call print_string
-    mov si, apps_str3
-    call print_string
-    mov si, apps_str4
-    call print_string
-    mov si, apps_str5
-    call print_string
     ret
 
 strcmp:
@@ -424,14 +414,42 @@ il_done:
     call print_newline
     ret
 
-; the data section 
+print_single_char:
+    mov ah, 0x0E
+    int 0x10
+    ret
+
+print_char_range:
+    push ax
+    push bx
+
+    mov bl, al      
+    mov bh, ah      
+
+.next_char:
+    mov al, bl
+    call print_single_char
+    inc bl
+    cmp bl, bh
+    jbe .next_char
+
+    pop bx
+    pop ax
+    ret
+
+
+functestuncfunc_everycharascii:
+    newlineprint "Test chars: "
+    mov al, 0x20    ; first ascii which is like the first annoying little letter of the alphabet
+    mov ah, 0x7E    ; last ascii which is "~" and its super skibidi 67 sigma
+    call print_char_range
+    call print_newline
+    ret
+
+
+; the data section [[the old stuff, before i realized i could make a newlineprint macro]]
 
 welcome1         db "  welcome to MicroOS", 13, 10, 0
-apps_str1        db "  commands available:", 13, 10, 0
-apps_str2        db "  hello      - say hello", 13, 10, 0
-apps_str3        db "  clear      - clear screen", 13, 10, 0
-apps_str4        db "  echo       - echo argument", 13, 10, 0
-apps_str5        db "  loaddriver - load a driver", 13, 10, 0
 prompt           db "> ", 0
 msg_hello        db "Hello from MicroOS!", 13, 10, 0
 msg_unknown      db "Unknown command", 13, 10, 0
@@ -443,13 +461,21 @@ cmd_buffer      times 64  db 0
 arg_buffer      times 64  db 0
 drv_filename    times 64  db 0
 
-driver_registry:
+driver_registry: 
 
     db "driver_memscan.bin",0
+    db "driver_test.bin", 0
     db 10        
     db 4         
 
     db 0
+
+firsttestdriver:
+    jmp 0x4C200
+
+    .done:
+        ret
+
 
 
 command_table:
@@ -465,4 +491,8 @@ command_table:
     dw cmd_loaddriver
     db 4, "shutdown", 0
     dw commitkys
+    db 4, "Microos_Driver_Test", 0 
+    dw firsttestdriver
+    db 4, "chartest", 0
+    dw functestuncfunc_everycharascii
     db 0
