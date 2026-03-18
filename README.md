@@ -7,6 +7,10 @@ Run this to test it in a VM:
 ```chmod +x test.sh ``` <br>
 ```./test.sh```
 
+# Thanks!!
+
+<p3> If youre willingly on this repo. Then i would like to massively thank you. Even a few people knowing and acknowledging this would make me very happy. </p3>
+
 Think of this as a learning OS that you can read the code from to learn. i made the code specifically to be very easy to look and observe for beginners. I am looking forward to making this bigger and making this something real in my portfolio. 
 
 If you want to download this for Personal/Commercial use: <b>Just do it, But make sure to credit me so i can get fame as a currency.</b>
