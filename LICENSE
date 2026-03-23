@@ -1,4 +1,4 @@
-MIT License
+Salami License
 
 Copyright (c) 2026 SalamiDev
 
@@ -11,6 +11,19 @@ furnished to do so, subject to the following conditions:
 
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
+
+Copyleft Requirement. If the Licensee distributes a modified version of the
+Software, the Licensee must make the complete corresponding source code of
+the modified version publicly available under the terms of this License,
+at no charge and in a publicly accessible location.
+
+Attribution Requirement. In any use of the Software in a commercial context, 
+the Licensee shall provide clear and visible credit to the original author. 
+Such credit shall include a hyperlink to the Licensor’s GitHub profile 
+(https://github.com/salamideveloper) in a manner reasonably calculated to give 
+prominent notice of the Licensor’s authorship. This attribution must appear 
+in all user‑facing materials, documentation, or “About” sections associated 
+with the commercial product or service incorporating the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,

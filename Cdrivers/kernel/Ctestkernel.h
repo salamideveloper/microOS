@@ -14,8 +14,9 @@ void Ckerneltestdriver_runnow(char args[][64], int argc) {
     println("[Bytecount test:");
     kprintf("Should return [31] | %u\n", sizeof(bytestring));
     if (sizeof(bytestring) == 31) {
-        println("[Bytecount, Healthy!]      | [✓]");
+        println("[Bytecount, Healthy.]      | [*]");
     }
+
 }
 
 #endif

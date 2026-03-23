@@ -59,18 +59,21 @@ kernel_main: ; AFTER THE TEST DRIVER AND LOADING THE BOOTLOADER IT SHOULD DO BLO
     mov sp, 0x7C00
     sti
 
+    newlineprint "-----------------------------------------------------------------------"
     newlineprint "                   "
     newlineprint "                   "
     newlineprint "  /=====-----=====\"
     newlineprint "  |!! MICRO OS !!-|"
-    newlineprint "  |Codename: sig67|"
+    newlineprint "  |ASSEMBLY KERNEL|"
+    newlineprint "  |Codename:Cwind |"
     newlineprint "  \=====-----=====/"
     newlineprint " "
     newlineprint " "
     newlineprint "  USE THE COMMAND: 'continue' TO GET INTO THE BETTER KERNEL."
     newlineprint "  I PUT MORE UPDATES AND EFFORT INTO THE BETTER KERNEL THAN THIS ONE!"
-    newlineprint "                   "
-    newlineprint "                   "
+    newlineprint " "
+    newlineprint " "
+    newlineprint "-----------------------------------------------------------------------"
 
     call checkifstartatc
 

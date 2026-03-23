@@ -35,13 +35,20 @@ If youre interested for the assembly kernel commands, Theyre pretty limited but 
   <p>continue | Goes to the C kernel, <b>Its recommended that you do this.</b></p>
 </details>
 
+<br><br><br>
+
 # Contributing to microOS.
 
 Feel free to send out contribution request whenever you want. I'm sure this wont get as popular as the linux kernel because the linux kernel is just too awesome but if this repo even gets 100 stars. It would mean the world.
 
+<br><br><br>
+
 # How to get to the assembly kernel?
 
-The assembly kernel terminal is the first kernel i had ever written in my life. To acces it, Open "kernel.asm" and find this line: ```StartAtC db 1```. After finding it, Edit "1" to be "0", Which skips the part where it automatically goes to the C kernel and stays in assembly. You can toggle it whenever you want, it doesn't remove anything.
+The assembly kernel terminal is the first stage of the whole OS past the bootloader, Technically its still not even in the OS. To access it, Open "kernel.asm" and find this line: ```StartAtC db 1```. After finding it, Edit "1" to be "0", Which skips the part where it automatically goes to the C kernel and stays in assembly. You can toggle it whenever you want, it doesn't remove anything.
+
+
+<br><br><br><br>
 
 # Thanks!!
 

@@ -18,7 +18,7 @@ void kernel_main() {
     println("       __________________________");
     println("");
 
-    char input[128];
+    char input[1024];
 
     while (1) {
         print("> ");
