@@ -72,9 +72,113 @@ kernel_main: ; AFTER THE TEST DRIVER AND LOADING THE BOOTLOADER IT SHOULD DO BLO
     newlineprint "                   "
     newlineprint "                   "
 
+    call checkifstartatc
+
     mov si, welcome1
     call print_string
     jmp restart
+
+checkifstartatc:
+    cmp byte [StartAtC], 1
+    je cmd_continue
+    jne .done
+
+.done:
+    ret
+
+
+cmd_continue:
+    mov si, msg_continue
+    call print_string
+    call print_newline
+
+    cli
+
+    ; build GDT at 0x7E00
+    mov di, 0x7E00
+    mov dword [di],    0
+    mov dword [di+4],  0
+    mov word  [di+8],  0xFFFF
+    mov word  [di+10], 0x0000
+    mov byte  [di+12], 0x00
+    mov byte  [di+13], 0x9A
+    mov byte  [di+14], 0xCF
+    mov byte  [di+15], 0x00
+    mov word  [di+16], 0xFFFF
+    mov word  [di+18], 0x0000
+    mov byte  [di+20], 0x00
+    mov byte  [di+21], 0x92
+    mov byte  [di+22], 0xCF
+    mov byte  [di+23], 0x00
+    mov word  [di+24], 23
+    mov dword [di+26], 0x7E00
+
+    lgdt [0x7E18]
+
+    mov eax, cr0
+    or eax, 1
+    mov cr0, eax
+
+    jmp 0x08:pm_enter
+
+msg_continue db "Switching to advanced mode...", 0
+
+bits 32
+pm_enter:
+    mov ax, 0x10
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
+    mov esp, 0x90000
+
+    call 0x50000
+
+    cli
+    hlt
+
+gdt_start:
+    dd 0
+    dd 0
+
+    
+    dw 0xFFFF
+    dw 0x0000
+    db 0x00
+    db 10011010b
+    db 11001111b
+    db 0x00
+
+    ; small pp energy type of data buffers, the manual absolutely carried me through this one since i cant memorize whatever this is
+    dw 0xFFFF
+    dw 0x0000
+    db 0x00
+    db 10010010b
+    db 11001111b
+    db 0x00
+gdt_end:
+
+gdt_descriptor:
+    dw gdt_end - gdt_start - 1
+    dd gdt_start
+
+bits 32
+protected_mode:
+    mov ax, 0x10
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
+    mov esp, 0x90000
+
+    call 0x50000        ; C kernel lives here now yipeeee
+
+    cli
+    hlt
+
+bits 16
 
 restart:
     mov di, input_buffer
@@ -255,7 +359,7 @@ clear_arg_table:
     ret
 
 commitkys: ; 
-    ; the most annoying but least shit way to shut a CPU down. This looks dumb.
+    ; gaslight the CPU into shutting the ever living fuck up. This is one of the safest ways to turn it off, But fuck the CPU like shut the fuck up for once
     mov ax, 0x5301      
     xor bx, bx          
     int 0x15
@@ -418,97 +522,6 @@ il_done:
     call print_newline
     ret
 
-cmd_continue:
-    mov si, msg_continue
-    call print_string
-    call print_newline
-
-    cli
-
-    ; build GDT at 0x7E00
-    mov di, 0x7E00
-    mov dword [di],    0
-    mov dword [di+4],  0
-    mov word  [di+8],  0xFFFF
-    mov word  [di+10], 0x0000
-    mov byte  [di+12], 0x00
-    mov byte  [di+13], 0x9A
-    mov byte  [di+14], 0xCF
-    mov byte  [di+15], 0x00
-    mov word  [di+16], 0xFFFF
-    mov word  [di+18], 0x0000
-    mov byte  [di+20], 0x00
-    mov byte  [di+21], 0x92
-    mov byte  [di+22], 0xCF
-    mov byte  [di+23], 0x00
-    mov word  [di+24], 23
-    mov dword [di+26], 0x7E00
-
-    lgdt [0x7E18]
-
-    mov eax, cr0
-    or eax, 1
-    mov cr0, eax
-
-    jmp 0x08:pm_enter
-
-msg_continue db "Switching to advanced mode...", 0
-
-bits 32
-pm_enter:
-    mov ax, 0x10
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
-    mov ss, ax
-    mov esp, 0x90000
-
-    call 0x50000
-
-    cli
-    hlt
-
-gdt_start:
-    dd 0
-    dd 0
-
-    
-    dw 0xFFFF
-    dw 0x0000
-    db 0x00
-    db 10011010b
-    db 11001111b
-    db 0x00
-
-    ; small pp energy type of data buffers, the manual absolutely carried me through this one since i cant memorize whatever this is
-    dw 0xFFFF
-    dw 0x0000
-    db 0x00
-    db 10010010b
-    db 11001111b
-    db 0x00
-gdt_end:
-
-gdt_descriptor:
-    dw gdt_end - gdt_start - 1
-    dd gdt_start
-
-bits 32
-protected_mode:
-    mov ax, 0x10
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
-    mov ss, ax
-    mov esp, 0x90000
-
-    call 0x50000        ; C kernel lives here now yipeeee
-
-    cli
-    hlt
-
 print_single_char:
     mov ah, 0x0E
     int 0x10
@@ -535,7 +548,7 @@ print_char_range:
 
 functestuncfunc_everycharascii:
     newlineprint "Test chars: "
-    mov al, 0x20    ; first ascii which is like the first annoying little letter of the alphabet
+    mov al, 0x20  
     mov ah, 0x7E    ; last ascii which is "~" and its super skibidi 67 sigma
     call print_char_range
     call print_newline
@@ -550,6 +563,8 @@ msg_hello        db "Hello from MicroOS!", 13, 10, 0
 msg_unknown      db "Unknown command", 13, 10, 0
 msg_drv_notfound db "loaddriver: unknown driver", 13, 10, 0
 msg_drv_diskerr  db "loaddriver: disk error", 13, 10, 0
+
+StartAtC db 1 ; To any regular user like people that cloned or pulled this from github, It's reccomended you keep this at 1. The assembly kernel lacks usefull features.
 
 input_buffer    times 128 db 0  
 cmd_buffer      times 64  db 0
@@ -570,8 +585,6 @@ firsttestdriver:
 
     .done:
         ret
-
-
 
 command_table:
     db 5, "tinyhello", 0
