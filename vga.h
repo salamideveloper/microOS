@@ -5,10 +5,12 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-#define VGA_MEMORY   0xB8000
-#define VGA_WIDTH    80
-#define VGA_HEIGHT   25
+#define VGA_MEMORY     0xB8000
+#define VGA_GFX_MEMORY 0xA0000  
+#define VGA_WIDTH      80
+#define VGA_HEIGHT     25
 
+static uint8_t* vga_buffer = (uint8_t*)VGA_GFX_MEMORY;
 #define HEAP_START   0x200000
 #define HEAP_SIZE    0x400000
 
@@ -443,6 +445,21 @@ void read_line(char* buffer, uint32_t max) {
     }
 }
 
+void draw_rect(int x, int y, int width, int height) {
+    volatile uint8_t* vga = (volatile uint8_t*)VGA_MEMORY;
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            uint32_t index = ((y + i) * VGA_WIDTH + (x + j)) * 2;
+            vga[index] = 0xDB; // i have no idea what to put here now this is just shit but it works atleast but its so shittts
+
+        }
+    }
+}
+
+void draw_txt(int x, int y, char* text) {
+
+}
+
 void hide_cursor() {
     io_outb(0x3D4, 0x0A);
     io_outb(0x3D5, 0x20);
@@ -457,6 +474,13 @@ void move_cursor(uint32_t x, uint32_t y) {
     uint16_t pos = y * VGA_WIDTH + x;
     io_outb(0x3D4, 0x0F); io_outb(0x3D5, (uint8_t)(pos & 0xFF));
     io_outb(0x3D4, 0x0E); io_outb(0x3D5, (uint8_t)((pos >> 8) & 0xFF));
+}
+
+char* strdup(const char* s) { // so i can mallocate a string without using like 5 lines of code.
+    uint32_t len = strlen(s) + 1;
+    char* buf = malloc(len);
+    memcpy(buf, s, len);
+    return buf;
 }
 
 #endif

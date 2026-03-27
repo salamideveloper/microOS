@@ -14,7 +14,9 @@ void cmd_clear(char args[][MAX_ARG_LEN], int argc);
 void cmd_meminfo(char args[][MAX_ARG_LEN], int argc);
 void cmd_echo(char args[][MAX_ARG_LEN], int argc);
 void cmd_color(char args[][MAX_ARG_LEN], int argc);
-void cmd_healthynesstest(char args[][MAX_ARG_LEN], int argc);
+void graphicscardtestaaagh(char args[][MAX_ARG_LEN], int argc);
+void cmd_jebus_easteregghaha(char args[][MAX_ARG_LEN], int argc);
+void cmd_strbuffertest(char args[][MAX_ARG_LEN], int argc);
 
 typedef struct {
     const char* name;
@@ -28,8 +30,10 @@ static Command command_table[] = {
     {"meminfo", "show available RAM",    cmd_meminfo},
     {"echo",    "print arguments",       cmd_echo},
     {"color",   "change text color 0-F", cmd_color},
-    {"healthtestC", "Simple little VGA tester", cmd_healthynesstest},
+    {"GPUtest", "small graphics tester", graphicscardtestaaagh},
     {"Ckerneldrivers_inittest", "Test kerneldriver that does nothing", Ckerneltestdriver_runnow},
+    {"jebusishere", "Who is jebus", cmd_jebus_easteregghaha},
+    {"strbuffertest", "test if buffers work or cry", cmd_strbuffertest},
     {0, 0, 0}
 };
 
@@ -87,18 +91,39 @@ void cmd_help(char args[][MAX_ARG_LEN], int argc) {
     println("");
 }
 
-void cmd_healthynesstest(char args[][MAX_ARG_LEN], int argc) {
+void graphicscardtestaaagh(char args[][MAX_ARG_LEN], int argc) { //AAAGHHHHHHH 
     (void)args; (void)argc;
-    println("");
-    println("Ckernel Test [+]=x=[+]");
-    char input[128];
-    print("[*128] Enter a string >>");
-    read_line(input, 128);
-    for (int i = 0; i < argc; i++) {
-        print(args[i]);
-        if (i < argc - 1) println("You have to put in something!");
+    clear_screen();
+    println("  annoying graphics card test and yes i gave up on drawing shapes");
+    println("---------------------------------------------------------------------");
+
+    for (int i = 0; i < 256; i++) {
+        if (i == 7 || i == 8 || i == 9 || i == 10 || i == 13) {
+            vga_putchar(' '); 
+        } else {
+            vga_putchar((char)i);
+        }
+        vga_putchar(' ');
+        if ((i + 1) % 16 == 0) {
+            vga_putchar('\n');
+        }
     }
+
+    println("\n------------------------------");
+    println("test Complete");
 }
+void cmd_jebus_easteregghaha(char args[][MAX_ARG_LEN], int argc) {
+    (void)args; (void)argc;
+    println("NOOO JEBUS STOP NOOO HE IS GONNA EAT THE WORLDDD SOMEONE STOP HIMM");
+}
+
+void cmd_strbuffertest(char args[][MAX_ARG_LEN], int argc) {
+    (void)args; (void)argc;
+    char *buff = strdup("[*] Pass it worked!!!!");
+    println(buff);
+    free(buff);
+}
+
 
 void cmd_clear(char args[][MAX_ARG_LEN], int argc) {
     (void)args; (void)argc;

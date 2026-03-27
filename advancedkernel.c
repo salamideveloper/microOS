@@ -15,6 +15,7 @@ void kernel_main() {
     println(" ");
     print("          ");
     print_mem_info();
+    println("          C kernel Terminal");
     println("       __________________________");
     println("");
 

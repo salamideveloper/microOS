@@ -1,5 +1,21 @@
 # <p1>MicroOS</p1>
+<img width="1536" height="1024" alt="wow cool microos icon" src="https://github.com/user-attachments/assets/68d2751b-a3cc-4332-95ff-59920c273085" />
+
+
+
+ <br>
+------------------------------------------------------<br>
 MicroOS is a minimal project and educational OS made for maximum compatibility. It can run on both old and new CPU's powered by the X86 assembly instruction set for maximum compatibility and flexibility. It is mainly made for education and to be a sweet asset on my portfolio and i don't plan on making it a full mainstream OS. 
+
+<br><br><br>
+
+<h2> Stages: </h2>
+<h3> 1, Bootloader to load the further stages. This is at adress 0x7C00 because of the intel 8086, This was kept like that and its still the norm today.</h3>
+<h3> 2, Extrabootloader (Assembly kernel terminal in microOS).</h3>
+<h3> 3, Raw instructions for entering the fourth stage.</h3>
+<h3> 4, C kernel terminal.</h3>
+
+<br><br><br>
 
 Run this to test it in a VM:
 (First make sure **qemu** is installed on your testing system I highly recomend testing this on WSL or Linux. But you can also run it on windows if youre feeling a bit jolly)
@@ -8,12 +24,15 @@ Run this to test it in a VM:
 ```./test.sh```
 
 
-<img width="713" height="337" alt="image" src="https://github.com/user-attachments/assets/9e4f90f4-5372-4d5f-b3bb-d521671e836c" /><br><br>
+<img width="697" height="404" alt="image" src="https://github.com/user-attachments/assets/de8a5366-2370-4b81-87af-4489343ce099" /><br><br>
 
-You are now in the **Assembly kernel**. Which doesn't have as many features. So to go to the real kernel you need to put in this command:
+
+IF you see this ^, Then be sure to type the command:
 ```
 continue
 ```
+OR you can go into kernel.asm and turn <b>"StartAtC db 0" into "StartAtC db 1"</b> To make it boot into the C kernel automatically without typing the "continue" command. You can toggle this whenever you want.
+
 <br>
 After using the **continue** command, You should be seeing this:<br><br>
 <img width="710" height="390" alt="image" src="https://github.com/user-attachments/assets/45c5107f-a3b6-441d-b79d-25ddaded3d7c" />
@@ -35,11 +54,22 @@ If youre interested for the assembly kernel commands, Theyre pretty limited but 
   <p>continue | Goes to the C kernel, <b>Its recommended that you do this.</b></p>
 </details>
 
+---------
+
+Is this kind of like dos? Yes. it is kinda like dos. But i do think it is cool. And i really like cool things like this, But eventually i will probably make GUI and advanced drivers and support for lots of devices. If you want to see this grow, Then give this project a star and a watch if youre really jolly about this, I'm not sure about investing but my discord profile is: @salamidev 
+So feel free to DM me to go into the further advanced options. 
+
+If youre a good programmer and want to help the project out (You could be the one of the first 10 contributors if this blows up) If you want to, I'm willing to happily accept contributions. I don't know how they work yet tho but i'll figure it out
+
+---------
+
 <br><br><br>
 
 # Contributing to microOS.
 
 Feel free to send out contribution request whenever you want. I'm sure this wont get as popular as the linux kernel because the linux kernel is just too awesome but if this repo even gets 100 stars. It would mean the world.
+
+---------
 
 <br><br><br>
 
@@ -47,6 +77,19 @@ Feel free to send out contribution request whenever you want. I'm sure this wont
 
 The assembly kernel terminal is the first stage of the whole OS past the bootloader, Technically its still not even in the OS. To access it, Open "kernel.asm" and find this line: ```StartAtC db 1```. After finding it, Edit "1" to be "0", Which skips the part where it automatically goes to the C kernel and stays in assembly. You can toggle it whenever you want, it doesn't remove anything.
 
+<img width="729" height="92" alt="image" src="https://github.com/user-attachments/assets/5fc8c11d-8e81-4f36-9606-cb339dbd3ef0" />
+
+<b> ^, Remove the "1" and replace it with "0", You can undo this whenever you want.</b>
+
+And after you turn it to 0:
+
+<img width="200" height="44" alt="image" src="https://github.com/user-attachments/assets/f7e42f83-0686-453b-bcb2-097e311cde6c" />
+
+You get here:
+
+<img width="697" height="404" alt="image" src="https://github.com/user-attachments/assets/de8a5366-2370-4b81-87af-4489343ce099" /><br><br>
+
+---------
 
 <br><br><br><br>
 
@@ -62,5 +105,7 @@ If you want to download this for Personal/Commercial use: <b>Just do it, But mak
 
 Have fun using this as an educational OS, Show this to your friends or learn from the code. You can learn how to make an assembly bootloader and simple kernel and drivers from this. (<b>X86</b>)
 
+---------
+
 # Why i deleted and re uploaded the repo:
-I realized some commits exposed personal information. And githubs dipshit ass did not let me remove the history of them. So i was forced to delete and re upload the whole repo. This repo was made about a month ago from when i reuploaded the repo. [2026-03-23].
+I realized some commits exposed personal information. And github's dilly dally did not let me remove the history of them. So i was forced to delete and re upload the whole repo. This repo was made about a month ago from when i reuploaded the repo. [2026-03-23].

@@ -1,7 +1,7 @@
 [org 0x7C00]
 bits 16
 
-; ts is the bootloader for microOS. If you read it carefully. You can strongly observe how autistic this looks.
+; ts is the bootloader for microOS. If you read it carefully. You can strongly observe how "dude go talk in english what is this WHAT IS THISSS 😭" this looks.
 
 start:
     cli
@@ -21,7 +21,8 @@ start:
     mov si, msg3
     call print_string
 
-    ; load assembly kernel at 0x8000
+    ; asem kernel is at like 0x8000
+
     mov ax, 0x0000
     mov es, ax
     mov bx, 0x8000
@@ -34,10 +35,7 @@ start:
     int 0x13
     jc disk_error
 
-    mov si, msg4
-    call print_string
-
-    ; load C kernel at 0x50000
+    ; c kernel is at 0x5000
     mov ax, 0x5000
     mov es, ax
     mov bx, 0x0000
@@ -71,12 +69,11 @@ print_string:
     ret
 
 boot_drive  db 0
-msg1        db "[|] MicroOS Bootloader", 13, 10, 0
-msg2        db "[*] Loading assembly kernel", 13, 10, 0
-msg3        db "[*] Kernel is at 0x8000", 13, 10, 0
-msg4        db "[*] Loading C kernel", 13, 10, 0
-msg5        db "[*] C kernel is at 0x50000", 13, 10, 0
-msg_err     db "[!] Disk read error!", 13, 10, 0
+msg1        db "[|] boot!!!! ", 13, 10, 0
+msg2        db "[*] Asem kernel", 13, 10, 0
+msg3        db "[*] Asemkernel is at 0x8000 btw", 13, 10, 0 ; dont ask where msg4 went we dont talk about msg4
+msg5        db "[*] C kernel is at 0x50000 btw", 13, 10, 0
+msg_err     db "[!] Disk read error NOO FIX NOWWW!!", 13, 10, 0
 
 times 510-($-$$) db 0
 dw 0xAA55

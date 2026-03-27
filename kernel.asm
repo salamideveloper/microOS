@@ -39,7 +39,7 @@ ARG_SIZE            equ 32
     je %2
 %endmacro
 
-; okay so this load driver macro might just be the most autistic macro that has ever been made.
+; what a load of shit, it says "driver" but its just teleporting to a memory adress where the "driver" which is actually another assembly file gets loaded.
 
 %macro load_driver 1 
     jmp %%after
@@ -50,7 +50,7 @@ ARG_SIZE            equ 32
     call do_load_driver
 %endmacro
 
-kernel_main: ; AFTER THE TEST DRIVER AND LOADING THE BOOTLOADER IT SHOULD DO BLOODY THIS
+kernel_main: ; finally we got rid of the macro's, if assembly macros didnt exist then technology would probably be 4 million years behind.
     cli
     xor ax, ax
     mov ds, ax
@@ -59,21 +59,21 @@ kernel_main: ; AFTER THE TEST DRIVER AND LOADING THE BOOTLOADER IT SHOULD DO BLO
     mov sp, 0x7C00
     sti
 
-    newlineprint "-----------------------------------------------------------------------"
+    newlineprint "----hi----------------------------------------------------------------"
     newlineprint "                   "
     newlineprint "                   "
-    newlineprint "  /=====-----=====\"
+    newlineprint "  /=====--O--=====\"
     newlineprint "  |!! MICRO OS !!-|"
     newlineprint "  |ASSEMBLY KERNEL|"
     newlineprint "  |Codename:Cwind |"
-    newlineprint "  \=====-----=====/"
+    newlineprint "  \=====--O--=====/"
     newlineprint " "
     newlineprint " "
     newlineprint "  USE THE COMMAND: 'continue' TO GET INTO THE BETTER KERNEL."
     newlineprint "  I PUT MORE UPDATES AND EFFORT INTO THE BETTER KERNEL THAN THIS ONE!"
     newlineprint " "
     newlineprint " "
-    newlineprint "-----------------------------------------------------------------------"
+    newlineprint "--------------------------------------------hi--------------------------"
 
     call checkifstartatc
 
@@ -567,8 +567,6 @@ msg_unknown      db "Unknown command", 13, 10, 0
 msg_drv_notfound db "loaddriver: unknown driver", 13, 10, 0
 msg_drv_diskerr  db "loaddriver: disk error", 13, 10, 0
 
-StartAtC db 1 ; To any regular user like people that cloned or pulled this from github, It's reccomended you keep this at 1. The assembly kernel lacks usefull features.
-
 input_buffer    times 128 db 0  
 cmd_buffer      times 64  db 0
 arg_buffer      times 64  db 0
@@ -589,7 +587,9 @@ firsttestdriver:
     .done:
         ret
 
-command_table:
+StartAtC db 1 ; To any regular user like people that cloned or pulled this from github, It's reccomended you keep this at 1. The assembly kernel lacks usefull features.
+
+command_table: 
     db 5, "tinyhello", 0
     dw print_hello
     db 5, "clear", 0
