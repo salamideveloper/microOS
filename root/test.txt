@@ -1,0 +1,10 @@
+test for the filesystem in the future
+if this can be read by microOS then it works.
+
+some secrets:
+
+[pass54]
+[U2FsdGVkX18fMcDOhQ9T+gtJQll4CaVO5CisoGJtwhO5mFKWyATTIN5MhdUWy9VUuhvyf8JBNGRymuSufV2wGw==]
+
+[pass94]
+[U2FsdGVkX1+mY4HxyUmU2SmnluGM6OO/k0S5U52OGTM=]

@@ -59,21 +59,21 @@ kernel_main: ; finally we got rid of the macro's, if assembly macros didnt exist
     mov sp, 0x7C00
     sti
 
-    newlineprint "----hi----------------------------------------------------------------"
+    newlineprint "----------------------------------------------------------------------"
     newlineprint "                   "
     newlineprint "                   "
-    newlineprint "  /=====--O--=====\"
+    newlineprint "  /=====--*--=====\"
     newlineprint "  |!! MICRO OS !!-|"
     newlineprint "  |ASSEMBLY KERNEL|"
     newlineprint "  |Codename:Cwind |"
-    newlineprint "  \=====--O--=====/"
+    newlineprint "  \=====--*--=====/"
     newlineprint " "
     newlineprint " "
     newlineprint "  USE THE COMMAND: 'continue' TO GET INTO THE BETTER KERNEL."
     newlineprint "  I PUT MORE UPDATES AND EFFORT INTO THE BETTER KERNEL THAN THIS ONE!"
     newlineprint " "
     newlineprint " "
-    newlineprint "--------------------------------------------hi--------------------------"
+    newlineprint "------------------------------------------------------------------------"
 
     call checkifstartatc
 
@@ -587,7 +587,19 @@ firsttestdriver:
     .done:
         ret
 
-StartAtC db 1 ; To any regular user like people that cloned or pulled this from github, It's reccomended you keep this at 1. The assembly kernel lacks usefull features.
+StartAtC db 0 ; To any regular user like people that cloned or pulled this from github, It's reccomended you keep this at 1. The assembly kernel lacks usefull features.
+
+helpcommandlist:
+    newlineprint "Available commands:"
+    newlineprint "  tinyhello - prints a cute message"
+    newlineprint "  clear - clears the terminal"
+    newlineprint "  echo - says everything you typed after it "
+    newlineprint "  loaddriver - loads a driver from the disk with arguments"
+    newlineprint "  shutdown - tells the CPU to kill itself so it has time to prepare."
+    newlineprint "  Microos_Driver_Test - First ever driver in assembly"
+    newlineprint "  chartest - prints all printable ASCII characters"
+    newlineprint "  continue - continues to the C kernel which i have a better time coding it."
+    ret
 
 command_table: 
     db 5, "tinyhello", 0
@@ -608,4 +620,6 @@ command_table:
     dw functestuncfunc_everycharascii
     db 8, "continue", 0
     dw cmd_continue
+    db 4, "help", 0
+    dw helpcommandlist
     db 0

@@ -17,6 +17,7 @@ void cmd_color(char args[][MAX_ARG_LEN], int argc);
 void graphicscardtestaaagh(char args[][MAX_ARG_LEN], int argc);
 void cmd_jebus_easteregghaha(char args[][MAX_ARG_LEN], int argc);
 void cmd_strbuffertest(char args[][MAX_ARG_LEN], int argc);
+void sysfetch(char args[][MAX_ARG_LEN], int argc);
 
 typedef struct {
     const char* name;
@@ -34,6 +35,7 @@ static Command command_table[] = {
     {"Ckerneldrivers_inittest", "Test kerneldriver that does nothing", Ckerneltestdriver_runnow},
     {"jebusishere", "Who is jebus", cmd_jebus_easteregghaha},
     {"strbuffertest", "test if buffers work or cry", cmd_strbuffertest},
+    {"microfetch", "show system information", sysfetch},
     {0, 0, 0}
 };
 
@@ -151,6 +153,17 @@ void cmd_color(char args[][MAX_ARG_LEN], int argc) {
     else if (c >= 'a' && c <= 'f') c = c - 'a' + 10;
     else { println("Invalid color!"); return; }
     vga_color = c;
+}
+
+void sysfetch(char args[][MAX_ARG_LEN], int argc) { 
+    (void)args; (void)argc;
+    println("microfetch ");
+    kprintf("Kernel: %s\n", "Advanced Mode");
+    kprintf("CPU: %s\n", "x86_64");
+    kprintf("Heap: %u bytes used, %u bytes free\n", heap_used(), heap_free());
+    kprintf("VGA Text Mode: %ux%u\n", VGA_WIDTH, VGA_HEIGHT);
+    println("");
+    print_mem_info();
 }
 
 #endif

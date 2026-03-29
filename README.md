@@ -1,5 +1,7 @@
-# <p1>MicroOS</p1>
-<img width="1536" height="1024" alt="wow cool microos icon" src="https://github.com/user-attachments/assets/68d2751b-a3cc-4332-95ff-59920c273085" />
+z# <p1>MicroOS</p1>
+<img width="1080" height="1080" alt="micro os logo gimp" src="https://github.com/user-attachments/assets/07d2af49-5dbb-4661-bc4c-820b6020a2b7" />
+
+
 
 
 
@@ -41,18 +43,6 @@ After using the **continue** command, You should be seeing this:<br><br>
 
 Now, Try using the: **help** command to see every command available. 
 If youre interested for the assembly kernel commands, Theyre pretty limited but they're:
-
-<details>
-  <summary>Assembly kernel commands: </summary>
-  <p>tinyhello | Prints out a little surprise. This is a test command.</p>
-  <p>clear | Clears your screen</p>
-  <p>echo <args> | Prints out whatever you typed after <b>echo</b>.</p>
-  <p>loaddriver <args> <args> | Loads a driver </p>
-  <p>Shutdown | Powers the CPU off.</p>
-  <p>Microos_Driver_Test | Loads a testing driver to see if they work properly.</p>
-  <p>chartest | Lists out every character supported by your BIOS graphics.</p>
-  <p>continue | Goes to the C kernel, <b>Its recommended that you do this.</b></p>
-</details>
 
 ---------
 

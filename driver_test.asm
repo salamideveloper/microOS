@@ -16,6 +16,7 @@ start:
     ret ; THIS ONE LITTLE FUCKER FIXED THE ENTIRE DRIVER. I FORGOT TO RETURN. WHAT THE FUCK.
     
 .done: 
+    newlineprint "2"
     jmp 0x8000 
 
 
@@ -37,3 +38,4 @@ print_string:
 
 .done:
     ret
+

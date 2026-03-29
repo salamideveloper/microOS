@@ -18,4 +18,3 @@ git commit -m $message
 git push origin main --force
 
 echo "All right yeah its done i swear"
-echo "Done vro 🥔"
