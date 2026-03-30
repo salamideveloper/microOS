@@ -16,10 +16,6 @@ start:
 
     mov si, msg1
     call print_string
-    mov si, msg2
-    call print_string
-    mov si, msg3
-    call print_string
 
     ; asem kernel is at like 0x8000
 
@@ -48,9 +44,6 @@ start:
     int 0x13
     jc disk_error
 
-    mov si, msg5
-    call print_string
-
     jmp 0x0000:0x8000
 
 disk_error:
@@ -69,11 +62,12 @@ print_string:
     ret
 
 boot_drive  db 0
-msg1        db "[|] boot!!!! ", 13, 10, 0
+msg1        db "[*] boot!!!! ", 13, 10, 0
 msg2        db "[*] Asem kernel", 13, 10, 0
-msg3        db "[*] Asemkernel is at 0x8000 btw", 13, 10, 0 ; dont ask where msg4 went we dont talk about msg4
-msg5        db "[*] C kernel is at 0x50000 btw", 13, 10, 0
 msg_err     db "[!] Disk read error NOO FIX NOWWW!!", 13, 10, 0
+
+; to contributors: Feel free to optimize or squeeze out every single bit of the 510 bytes that are available.
+; used amount of bytes right now is 173 bytes So you contributors can add 327 bytes.
 
 times 510-($-$$) db 0
 dw 0xAA55

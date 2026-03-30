@@ -61,15 +61,17 @@ kernel_main: ; finally we got rid of the macro's, if assembly macros didnt exist
 
     newlineprint "----------------------------------------------------------------------"
     newlineprint "                   "
-    newlineprint "  /=====--[*]--=====\"
-    newlineprint "  | !! MICRO OS !!  |"
-    newlineprint "  | ASSEMBLY KERNEL |"
-    newlineprint "  | Codename:Hazel  |"
-    newlineprint "  | Adr: 0x8000     |"
-    newlineprint "  \=====-------=====/"
+    newlineprint "                   "
+    newlineprint "  /=====--*--=====\"
+    newlineprint "  |!! MICRO OS !!-|"
+    newlineprint "  |ASSEMBLY KERNEL|"
+    newlineprint "  |Codename:Cwind |"
+    newlineprint "  \=====--*--=====/"
+    newlineprint " "
     newlineprint " "
     newlineprint "  USE THE COMMAND: 'continue' TO GET INTO THE BETTER KERNEL."
     newlineprint "  I PUT MORE UPDATES AND EFFORT INTO THE BETTER KERNEL THAN THIS ONE!"
+    newlineprint " "
     newlineprint " "
     newlineprint "------------------------------------------------------------------------"
 
@@ -87,6 +89,35 @@ checkifstartatc:
 .done:
     ret
 
+
+set_idt_entry:
+    mov edi, idt
+    mov eax, ebx
+    shl eax, 3
+    add edi, eax
+
+    mov ax, dx        ; 16 bits is avarage, is what he said
+    mov [edi], ax
+
+    mov ax, 0x08     
+    mov [edi+2], ax
+
+    mov byte [edi+4], 0
+
+    mov byte [edi+5], 0x8E
+
+    shr edx, 16       ; okay so NOW 16 bit is a bit above avarage. this much sorcery just for sleep() to work
+    mov [edi+6], dx
+    ret
+
+idt:
+    times 256 dq 0
+
+idt_ptr:
+    dw idt_end - idt - 1
+    dd idt
+
+idt_end:
 
 cmd_continue:
     mov si, msg_continue
@@ -122,10 +153,19 @@ cmd_continue:
 
     jmp 0x08:pm_enter
 
+irq0_handler:
+    pusha
+
+    mov al, 0x20
+    out 0x20, al      
+
+    popa
+    iret
+
 msg_continue db "Switching to advanced mode...", 0
 
 bits 32
-pm_enter:
+pm_enter: ; messiest protected mode ever written
     mov ax, 0x10
     mov ds, ax
     mov es, ax
@@ -134,10 +174,18 @@ pm_enter:
     mov ss, ax
     mov esp, 0x90000
 
+    lidt [idt_ptr]
+
+    mov eax, irq0_handler
+    mov ebx, 32
+    call set_idt_entry
+
+    in al, 0x21
+    and al, 11111110b
+    out 0x21, al
+
     call 0x50000
 
-    cli
-    hlt
 
 gdt_start:
     dd 0
@@ -183,7 +231,7 @@ bits 16
 
 restart:
     mov di, input_buffer
-    mov cx, 256
+    mov cx, 128
     xor al, al
     rep stosb
     mov di, cmd_buffer
@@ -217,6 +265,7 @@ next_cmd:
 
 skip_cmd:
     inc di
+
 skip_loop:
     cmp byte [di], 0
     je skip_end
@@ -230,11 +279,13 @@ skip_end:
 
 run_cmd:
     inc di
+
 find_end:
     cmp byte [di], 0
     je addr
     inc di
     jmp find_end
+
 addr:
     inc di
     mov bx, [di]
@@ -600,7 +651,7 @@ helpcommandlist:
     ret
 
 command_table: 
-    db 5, "tinyhello", 0
+    db 9, "tinyhello", 0
     dw print_hello
     db 5, "clear", 0
     dw clear_screen

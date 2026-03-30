@@ -19,6 +19,8 @@ static uint8_t* vga_buffer = (uint8_t*)VGA_GFX_MEMORY;
 #define LSHIFT_RELEASE 0xAA
 #define RSHIFT_RELEASE 0xB6
 
+volatile uint32_t ticks = 0; // makes sure the CPU doesnt kill itself
+
 static int32_t cursor_x = 0;
 static int32_t cursor_y = 0;
 uint8_t vga_color = 0x07;
@@ -482,5 +484,30 @@ char* strdup(const char* s) { // so i can mallocate a string without using like 
     memcpy(buf, s, len);
     return buf;
 }
+
+void pit_handler() { // pasted this and the sleep function from the C manual since i am NOT built for this.
+    ticks++;
+}
+
+#define PIT_FREQ 1193182 // il just put these here instead of the top 
+#define HZ 1000
+
+void pit_init() { // again, C manual.
+    uint16_t divisor = PIT_FREQ / HZ;
+
+    io_outb(0x43, 0x36);
+    io_outb(0x40, divisor & 0xFF);
+    io_outb(0x40, divisor >> 8);
+}
+
+void sleep(float time) { // C manual.
+    uint32_t ms = (uint32_t)time;
+    uint32_t target = ticks + ms;
+
+    while (ticks < target) {
+        cpu_halt(); 
+    }
+}
+
 
 #endif

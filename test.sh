@@ -18,12 +18,12 @@ echo " "
 
 nasm -f elf32 entry.asm -o binary/entry.o || { echo "net wide assembler looked at entry.asm and said NO."; exit 1; }
 
-echo 3. compiled some still BIG boys
+echo 3. compiled some extras that are needed.
 echo " "
 
 gcc -m32 -ffreestanding -fno-builtin -nostdlib -fno-pic -O2 -c advancedkernel.c -o binary/advancedkernel.o || { echo "advanced kernel build failed noooooo"; exit 1; }
 
-echo 4. compiled one of the BIG IMPORTANT C Kernel.
+echo 4. compiled the BIG IMPORTANT legend sigma C Kernel.
 echo " "
 
 ld -m elf_i386 -Ttext 0x50000 --oformat binary -o binary/advancedkernel.bin binary/entry.o binary/advancedkernel.o || { echo "the linker looked at the object files and said HELL NO."; exit 1; }

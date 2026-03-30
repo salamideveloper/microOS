@@ -18,6 +18,7 @@ void graphicscardtestaaagh(char args[][MAX_ARG_LEN], int argc);
 void cmd_jebus_easteregghaha(char args[][MAX_ARG_LEN], int argc);
 void cmd_strbuffertest(char args[][MAX_ARG_LEN], int argc);
 void sysfetch(char args[][MAX_ARG_LEN], int argc);
+void lowcortisolsonglyrics(char args[][MAX_ARG_LEN], int argc);
 
 typedef struct {
     const char* name;
@@ -36,6 +37,7 @@ static Command command_table[] = {
     {"jebusishere", "Who is jebus", cmd_jebus_easteregghaha},
     {"strbuffertest", "test if buffers work or cry", cmd_strbuffertest},
     {"microfetch", "show system information", sysfetch},
+    {"lowcortisolsong", "take me back back home", lowcortisolsonglyrics},
     {0, 0, 0}
 };
 
@@ -164,6 +166,17 @@ void sysfetch(char args[][MAX_ARG_LEN], int argc) {
     kprintf("VGA Text Mode: %ux%u\n", VGA_WIDTH, VGA_HEIGHT);
     println("");
     print_mem_info();
+}
+
+void lowcortisolsonglyrics(char args[][MAX_ARG_LEN], int argc) {
+    (void)args; (void)argc;
+    println("Take me back back home ");
+    println("duong ve cung chang co xa");
+    println("dua em ve qua ba nga nam, nam nga ba la nha");
+    println("Take me back back home");
+    println("duong ve cung chang co xa");
+    println("dem khuya roi sao khong co ai dua em di ve nha?");
+
 }
 
 #endif

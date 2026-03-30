@@ -1,4 +1,4 @@
-z# <p1>MicroOS</p1>
+# <p1>MicroOS</p1>
 <img width="1080" height="1080" alt="micro os logo gimp" src="https://github.com/user-attachments/assets/07d2af49-5dbb-4661-bc4c-820b6020a2b7" />
 
 
@@ -94,6 +94,12 @@ If you want to download this for Personal/Commercial use: <b>Just do it, But mak
 <b> Note: I'm pretty young and a minor. So please do not do stuff that is in harm of me because that would just be a sad move for you and me. </b>
 
 Have fun using this as an educational OS, Show this to your friends or learn from the code. You can learn how to make an assembly bootloader and simple kernel and drivers from this. (<b>X86</b>)
+
+# Some struggles
+
+Making wifi drivers/ making wifi in general (I'm so done for) 😭 
+Making a filesystem (I'm so cooked)
+
 
 ---------
 
