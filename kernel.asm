@@ -585,7 +585,7 @@ firsttestdriver:
     .done:
         ret
 
-StartAtC db 0 ; To any regular user like people that cloned or pulled this from github, It's reccomended you keep this at 1. The assembly kernel lacks usefull features.
+StartAtC db 1 ; To any regular user like people that cloned or pulled this from github, It's reccomended you keep this at 1. The assembly kernel lacks usefull features.
 
 helpcommandlist:
     newlineprint "Available commands:"
