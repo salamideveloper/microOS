@@ -6,6 +6,10 @@ ARG_TABLE_ADDR      equ 0x7000
 ARG_MAX             equ 10
 ARG_SIZE            equ 32
 
+extern _disk_write_lba
+extern _disk_read_lba
+extern boot_drive
+
 %macro print 1 
     jmp %%after ; if macro's didnt exist, i would personally visit the assembly inventor´s residence.
     %%str db %1, 0

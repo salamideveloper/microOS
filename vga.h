@@ -517,4 +517,215 @@ void sleep_ms(uint32_t ms) {
 
 void sleep_sec(uint32_t seconds) { sleep_ms(seconds * 1000); }
 
+
+// AAAAAAAAAGHHH DUMB FILESYSTEM AGHHHHHHHHHHH
+
+#define MAX_FILES 64
+#define NAME_LEN 32
+#define FILE_SIZE 512
+#define FS_SECTOR_SIZE 512
+#define FS_LBA_START 200
+#define FS_MAGIC 0x3153464Du
+
+typedef struct {
+    char name[NAME_LEN];
+    char data[FILE_SIZE];
+    int used;
+} File;
+
+static File fs[MAX_FILES];
+
+typedef struct {
+    uint32_t magic;
+    uint32_t version;
+    File files[MAX_FILES];
+} FsDiskImage;
+
+#define FS_SECTOR_COUNT ((sizeof(FsDiskImage) + FS_SECTOR_SIZE - 1) / FS_SECTOR_SIZE)
+static FsDiskImage fs_disk_image;
+
+static int ata_wait_not_busy() {
+    for (uint32_t i = 0; i < 1000000; i++) {
+        uint8_t status = io_inb(0x1F7);
+        if (!(status & 0x80)) return 0;
+    }
+    return -1;
+}
+
+static int ata_wait_data_ready() {
+    for (uint32_t i = 0; i < 1000000; i++) {
+        uint8_t status = io_inb(0x1F7);
+        if (status & 0x01) return -1;     // ERR
+        if (!(status & 0x80) && (status & 0x08)) return 0; // !BSY && DRQ
+    }
+    return -1;
+}
+
+static int disk_read_sector(uint32_t lba, uint8_t* buffer) {
+    if (ata_wait_not_busy() < 0) return -1;
+
+    io_outb(0x1F6, 0xE0 | ((lba >> 24) & 0x0F));
+    io_outb(0x1F2, 1);
+    io_outb(0x1F3, (uint8_t)(lba & 0xFF));
+    io_outb(0x1F4, (uint8_t)((lba >> 8) & 0xFF));
+    io_outb(0x1F5, (uint8_t)((lba >> 16) & 0xFF));
+    io_outb(0x1F7, 0x20);
+
+    if (ata_wait_data_ready() < 0) return -1;
+
+    for (uint32_t i = 0; i < FS_SECTOR_SIZE / 2; i++) {
+        uint16_t w = io_inw(0x1F0);
+        buffer[i * 2] = (uint8_t)(w & 0xFF);
+        buffer[i * 2 + 1] = (uint8_t)(w >> 8);
+    }
+    return 0;
+}
+
+static int disk_write_sector(uint32_t lba, const uint8_t* buffer) {
+    if (ata_wait_not_busy() < 0) return -1;
+
+    io_outb(0x1F6, 0xE0 | ((lba >> 24) & 0x0F));
+    io_outb(0x1F2, 1);
+    io_outb(0x1F3, (uint8_t)(lba & 0xFF));
+    io_outb(0x1F4, (uint8_t)((lba >> 8) & 0xFF));
+    io_outb(0x1F5, (uint8_t)((lba >> 16) & 0xFF));
+    io_outb(0x1F7, 0x30);
+
+    if (ata_wait_data_ready() < 0) return -1;
+
+    for (uint32_t i = 0; i < FS_SECTOR_SIZE / 2; i++) {
+        uint16_t w = (uint16_t)buffer[i * 2] | ((uint16_t)buffer[i * 2 + 1] << 8);
+        io_outw(0x1F0, w);
+    }
+
+    io_outb(0x1F7, 0xE7); // flush cache
+    return ata_wait_not_busy();
+}
+
+void fs_init() {
+    for (int i = 0; i < MAX_FILES; i++)
+        fs[i].used = 0;
+}
+
+int fs_save() {
+    uint8_t sector[FS_SECTOR_SIZE];
+    uint8_t* raw = (uint8_t*)&fs_disk_image;
+    uint32_t total_bytes = sizeof(FsDiskImage);
+
+    memset(&fs_disk_image, 0, sizeof(FsDiskImage));
+    fs_disk_image.magic = FS_MAGIC;
+    fs_disk_image.version = 1;
+    memcpy(fs_disk_image.files, fs, sizeof(fs));
+
+    for (uint32_t s = 0; s < FS_SECTOR_COUNT; s++) {
+        uint32_t byte_offset = s * FS_SECTOR_SIZE;
+        uint32_t remaining = (byte_offset < total_bytes) ? (total_bytes - byte_offset) : 0;
+        uint32_t copy_len = remaining > FS_SECTOR_SIZE ? FS_SECTOR_SIZE : remaining;
+        memset(sector, 0, FS_SECTOR_SIZE);
+        if (copy_len) memcpy(sector, raw + byte_offset, copy_len);
+        if (disk_write_sector(FS_LBA_START + s, sector) < 0) return -1;
+    }
+
+    return 0;
+}
+
+int fs_load() {
+    uint8_t sector[FS_SECTOR_SIZE];
+    uint8_t* raw = (uint8_t*)&fs_disk_image;
+    uint32_t total_bytes = sizeof(FsDiskImage);
+
+    memset(&fs_disk_image, 0, sizeof(FsDiskImage));
+    for (uint32_t s = 0; s < FS_SECTOR_COUNT; s++) {
+        uint32_t byte_offset = s * FS_SECTOR_SIZE;
+        uint32_t remaining = (byte_offset < total_bytes) ? (total_bytes - byte_offset) : 0;
+        uint32_t copy_len = remaining > FS_SECTOR_SIZE ? FS_SECTOR_SIZE : remaining;
+        if (disk_read_sector(FS_LBA_START + s, sector) < 0) return -1;
+        if (copy_len) memcpy(raw + byte_offset, sector, copy_len);
+    }
+
+    if (fs_disk_image.magic != FS_MAGIC || fs_disk_image.version != 1) {
+        fs_init();
+        return fs_save();
+    }
+
+    memcpy(fs, fs_disk_image.files, sizeof(fs));
+    for (int i = 0; i < MAX_FILES; i++) {
+        if (fs[i].used) {
+            fs[i].name[NAME_LEN - 1] = 0;
+            fs[i].data[FILE_SIZE - 1] = 0;
+        }
+    }
+    return 0;
+}
+
+int fs_write(const char* name, const char* data) {
+    for (int i = 0; i < MAX_FILES; i++) {
+        if (fs[i].used) {
+            int match = 1;
+            for (int j = 0; name[j] || fs[i].name[j]; j++) {
+                if (name[j] != fs[i].name[j]) {
+                    match = 0;
+                    break;
+                }
+            }
+            if (match) {
+                int k = 0;
+                while (data[k] && k < FILE_SIZE - 1) {
+                    fs[i].data[k] = data[k];
+                    k++;
+                }
+                fs[i].data[k] = 0;
+                return fs_save();
+            }
+        }
+    }
+
+    for (int i = 0; i < MAX_FILES; i++) {
+        if (!fs[i].used) {
+            int j = 0;
+            while (name[j] && j < NAME_LEN - 1) {
+                fs[i].name[j] = name[j];
+                j++;
+            }
+            fs[i].name[j] = 0;
+            fs[i].used = 1;
+
+            int k = 0;
+            while (data[k] && k < FILE_SIZE - 1) {
+                fs[i].data[k] = data[k];
+                k++;
+            }
+            fs[i].data[k] = 0;
+            return fs_save();
+        }
+    }
+    return -1;
+}
+
+int fs_create(const char* name) {
+    for (int i = 0; i < MAX_FILES; i++) {
+        if (!fs[i].used) {
+            int j = 0;
+            while (name[j] && j < NAME_LEN - 1) {
+                fs[i].name[j] = name[j];
+                j++;
+            }
+            fs[i].name[j] = 0;
+            fs[i].used = 1;
+            fs[i].data[0] = 0;
+            return fs_save();
+        }
+    }
+    return -1;
+}
+
+void fs_list() {
+    for (int i = 0; i < MAX_FILES; i++) {
+        if (fs[i].used) {
+            print(fs[i].name);
+            print("\n");
+        }
+    }
+}
+
 #endif

@@ -3,6 +3,8 @@
 
 void kernel_main() {
     pit_init(); // PLEASE FUCKING WORK FOR FUCKING ONCE
+    fs_init();
+    fs_load();
     clear_screen();
     hide_cursor();
     println("");

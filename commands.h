@@ -19,6 +19,8 @@ void cmd_jebus_easteregghaha(char args[][MAX_ARG_LEN], int argc);
 void cmd_strbuffertest(char args[][MAX_ARG_LEN], int argc);
 void sysfetch(char args[][MAX_ARG_LEN], int argc);
 void lowcortisolsonglyrics(char args[][MAX_ARG_LEN], int argc);
+void cmd_touch(char args[][MAX_ARG_LEN], int argc);
+void cmd_ls(char args[][MAX_ARG_LEN], int argc);
 
 typedef struct {
     const char* name;
@@ -38,6 +40,8 @@ static Command command_table[] = {
     {"strbuffertest", "test if buffers work or cry", cmd_strbuffertest},
     {"microfetch", "show system information", sysfetch},
     {"lowcortisolsong", "take me back back home", lowcortisolsonglyrics},
+    {"touch", "create an empty file", cmd_touch},
+    {"ls", "list every file", cmd_ls},
     {0, 0, 0}
 };
 
@@ -186,5 +190,21 @@ void lowcortisolsonglyrics(char args[][MAX_ARG_LEN], int argc) {
     println(" ");
 
 }
+
+void cmd_touch(char args[][MAX_ARG_LEN], int argc) {
+    (void)args; (void)argc; 
+    if (argc == 0) { println("Usage: touch <filename>"); return; }
+    if (fs_write(args[0], "") < 0) {
+        println("Failed to create file");
+    } else {
+        println("File created successfully");
+    }
+}
+
+void cmd_ls(char args[][MAX_ARG_LEN], int argc) {
+    (void)args; (void)argc; 
+    fs_list();
+}
+
 
 #endif
