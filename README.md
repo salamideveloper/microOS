@@ -25,6 +25,14 @@ Run this to test it in a VM:
 ```chmod +x test.sh ``` <br>
 ```./test.sh```
 
+OR IF YOU WANT TO RECOMPILE (rebuilt microOS (takes 3 seconds)) for if you want to test new code that you put in yourself or modify or improve microOS. 
+Then do this:
+
+```
+chmod +x compile.sh
+./compile.sh
+```
+
 
 <img width="697" height="404" alt="image" src="https://github.com/user-attachments/assets/de8a5366-2370-4b81-87af-4489343ce099" /><br><br>
 
