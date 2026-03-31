@@ -169,13 +169,21 @@ void sysfetch(char args[][MAX_ARG_LEN], int argc) {
 }
 
 void lowcortisolsonglyrics(char args[][MAX_ARG_LEN], int argc) {
-    (void)args; (void)argc;
+    (void)args; (void)argc; 
+    println(" ");
     println("Take me back back home ");
+    sleep_sec(2);
     println("duong ve cung chang co xa");
+    sleep_sec(2);
     println("dua em ve qua ba nga nam, nam nga ba la nha");
+    sleep_sec(3);
     println("Take me back back home");
+    sleep_sec(1);
     println("duong ve cung chang co xa");
+    sleep_sec(2);
     println("dem khuya roi sao khong co ai dua em di ve nha?");
+    sleep_sec(2);
+    println(" ");
 
 }
 

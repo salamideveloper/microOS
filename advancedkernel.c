@@ -2,6 +2,7 @@
 #include "commands.h"
 
 void kernel_main() {
+    pit_init(); // PLEASE FUCKING WORK FOR FUCKING ONCE
     clear_screen();
     hide_cursor();
     println("");

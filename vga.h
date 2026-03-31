@@ -485,29 +485,36 @@ char* strdup(const char* s) { // so i can mallocate a string without using like 
     return buf;
 }
 
-void pit_handler() { // pasted this and the sleep function from the C manual since i am NOT built for this.
-    ticks++;
-}
-
 #define PIT_FREQ 1193182 // il just put these here instead of the top 
 #define HZ 1000
 
-void pit_init() { // again, C manual.
-    uint16_t divisor = PIT_FREQ / HZ;
-
-    io_outb(0x43, 0x36);
-    io_outb(0x40, divisor & 0xFF);
-    io_outb(0x40, divisor >> 8);
+void pit_init() {
+    io_outb(0x43, 0x34);
+    io_outb(0x40, 0xFF);
+    io_outb(0x40, 0xFF);
 }
 
-void sleep(float time) { // C manual.
-    uint32_t ms = (uint32_t)time;
-    uint32_t target = ticks + ms;
+uint16_t pit_read() {
+    io_outb(0x43, 0x00);
+    uint8_t lo = io_inb(0x40);
+    uint8_t hi = io_inb(0x40);
+    return (uint16_t)(hi << 8) | lo;
+}
 
-    while (ticks < target) {
-        cpu_halt(); 
+void sleep_ms(uint32_t ms) {
+    uint32_t ticks_needed = (uint32_t)(1193182UL * ms / 1000);
+    uint32_t ticks_counted = 0;
+    uint16_t last = pit_read();
+    while (ticks_counted < ticks_needed) {
+        uint16_t current = pit_read();
+        uint16_t diff;
+        if (last >= current) diff = last - current;
+        else diff = last + (0xFFFF - current);
+        ticks_counted += diff;
+        last = current;
     }
 }
 
+void sleep_sec(uint32_t seconds) { sleep_ms(seconds * 1000); }
 
 #endif
