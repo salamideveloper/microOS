@@ -598,7 +598,7 @@ static int disk_write_sector(uint32_t lba, const uint8_t* buffer) {
         io_outw(0x1F0, w);
     }
 
-    io_outb(0x1F7, 0xE7); // flush cache
+    io_outb(0x1F7, 0xE7);
     return ata_wait_not_busy();
 }
 
@@ -697,6 +697,31 @@ int fs_write(const char* name, const char* data) {
             }
             fs[i].data[k] = 0;
             return fs_save();
+        }
+    }
+    return -1;
+}
+
+int fs_read(const char* name, char* out, int out_size) {
+    if (!out || out_size <= 0) return -1;
+    for (int i = 0; i < MAX_FILES; i++) {
+        if (fs[i].used) {
+            int match = 1;
+            for (int j = 0; name[j] || fs[i].name[j]; j++) {
+                if (name[j] != fs[i].name[j]) {
+                    match = 0;
+                    break;
+                }
+            }
+            if (match) {
+                int k = 0;
+                while (k < out_size - 1 && fs[i].data[k]) {
+                    out[k] = fs[i].data[k];
+                    k++;
+                }
+                out[k] = 0;
+                return 0;
+            }
         }
     }
     return -1;

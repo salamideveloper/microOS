@@ -22,8 +22,18 @@ MicroOS is a minimal project and educational OS made for maximum compatibility. 
 Run this to test it in a VM:
 (First make sure **qemu** is installed on your testing system I highly recomend testing this on WSL or Linux. But you can also run it on windows if youre feeling a bit jolly)
 
-```chmod +x test.sh ``` <br>
-```./test.sh```
+```
+chmod +x test.sh 
+./test.sh
+```
+
+OR IF YOU WANT TO RECOMPILE (rebuilt microOS (takes 3 seconds)) for if you want to test new code that you put in yourself or modify or improve microOS. 
+Then do this:
+
+```
+chmod +x compile.sh
+./compile.sh
+```
 
 
 <img width="697" height="404" alt="image" src="https://github.com/user-attachments/assets/de8a5366-2370-4b81-87af-4489343ce099" /><br><br>

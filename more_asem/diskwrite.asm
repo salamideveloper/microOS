@@ -15,12 +15,11 @@ PORT_STATUS equ 0x1F7
 
 section .text
 
-; -----------------------------------------
-; void _disk_read_lba(int lba, int sector_count, void* buffer)
+
 ; eax = lba
-; ecx = sector count
-; edi = buffer
-; -----------------------------------------
+; ecx is the sector count
+; edi is the buffer
+
 _disk_read_lba:
     pusha
 
@@ -65,13 +64,6 @@ _disk_read_lba:
     popa
     ret
 
-
-; -----------------------------------------
-; void _disk_write_lba(int lba, int sector_count, void* buffer)
-; eax = lba
-; ecx = sector count
-; esi = buffer
-; -----------------------------------------
 _disk_write_lba:
     pusha
 

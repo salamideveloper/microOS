@@ -21,6 +21,8 @@ void sysfetch(char args[][MAX_ARG_LEN], int argc);
 void lowcortisolsonglyrics(char args[][MAX_ARG_LEN], int argc);
 void cmd_touch(char args[][MAX_ARG_LEN], int argc);
 void cmd_ls(char args[][MAX_ARG_LEN], int argc);
+void cmd_cat(char args[][MAX_ARG_LEN], int argc);
+void cmd_micropen(char args[][MAX_ARG_LEN], int argc);
 
 typedef struct {
     const char* name;
@@ -42,6 +44,8 @@ static Command command_table[] = {
     {"lowcortisolsong", "take me back back home", lowcortisolsonglyrics},
     {"touch", "create an empty file", cmd_touch},
     {"ls", "list every file", cmd_ls},
+    {"cat", "print file content", cmd_cat},
+    {"micropen", "tiny text editor", cmd_micropen},
     {0, 0, 0}
 };
 
@@ -204,6 +208,226 @@ void cmd_touch(char args[][MAX_ARG_LEN], int argc) {
 void cmd_ls(char args[][MAX_ARG_LEN], int argc) {
     (void)args; (void)argc; 
     fs_list();
+}
+
+void cmd_cat(char args[][MAX_ARG_LEN], int argc) {
+    if (argc == 0) { println("Usage: cat <filename>"); return; }
+    char data[FILE_SIZE];
+    if (fs_read(args[0], data, FILE_SIZE) < 0) {
+        println("File not found");
+        return;
+    }
+    println(data);
+}
+
+static int mp_clamp(int v, int lo, int hi) {
+    if (v < lo) return lo;
+    if (v > hi) return hi;
+    return v;
+}
+
+static int mp_index_to_col(const char* text, int len, int idx, int width) {
+    int col = 0;
+    idx = mp_clamp(idx, 0, len);
+    for (int i = 0; i < idx; i++) {
+        if (text[i] == '\n') col = 0;
+        else {
+            col++;
+            if (col >= width) col = 0;
+        }
+    }
+    return col;
+}
+
+static int mp_cursor_row(const char* text, int len, int idx, int width) {
+    int row = 0;
+    int col = 0;
+    idx = mp_clamp(idx, 0, len);
+    for (int i = 0; i < idx; i++) {
+        if (text[i] == '\n') {
+            row++;
+            col = 0;
+        } else {
+            col++;
+            if (col >= width) {
+                row++;
+                col = 0;
+            }
+        }
+    }
+    return row;
+}
+
+static int mp_move_up(const char* text, int len, int idx, int width) {
+    int target_col = mp_index_to_col(text, len, idx, width);
+    int line_start = idx;
+    while (line_start > 0 && text[line_start - 1] != '\n') line_start--;
+    if (line_start == 0) return idx;
+    int prev_end = line_start - 1;
+    int prev_start = prev_end;
+    while (prev_start > 0 && text[prev_start - 1] != '\n') prev_start--;
+    int prev_len = prev_end - prev_start;
+    int col = mp_clamp(target_col, 0, prev_len);
+    return prev_start + col;
+}
+
+static int mp_move_down(const char* text, int len, int idx, int width) {
+    int target_col = mp_index_to_col(text, len, idx, width);
+    int line_end = idx;
+    while (line_end < len && text[line_end] != '\n') line_end++;
+    if (line_end >= len) return idx;
+    int next_start = line_end + 1;
+    int next_end = next_start;
+    while (next_end < len && text[next_end] != '\n') next_end++;
+    int next_len = next_end - next_start;
+    int col = mp_clamp(target_col, 0, next_len);
+    return next_start + col;
+}
+
+static void mp_draw(const char* filename, const char* text, int len, int cursor, int* row_offset) {
+    const int editor_rows = 22;
+    const int editor_cols = 80;
+    int cur_row = mp_cursor_row(text, len, cursor, editor_cols);
+
+    if (cur_row < *row_offset) *row_offset = cur_row;
+    if (cur_row >= *row_offset + editor_rows) *row_offset = cur_row - editor_rows + 1;
+    if (*row_offset < 0) *row_offset = 0;
+
+    clear_screen();
+    print("micropen: ");
+    println(filename);
+    println("^S save | ^Q quit | arrows move");
+
+    int row = 0;
+    int col = 0;
+    int logical_row = 0;
+    for (int i = 0; i < len; i++) {
+        char ch = text[i];
+        if (logical_row >= *row_offset && row < editor_rows) {
+            if (ch == '\n') {
+                while (col < editor_cols) { vga_putchar(' '); col++; }
+            } else {
+                vga_putchar(ch);
+                col++;
+                if (col >= editor_cols) {
+                    row++;
+                    col = 0;
+                    continue;
+                }
+            }
+        }
+
+        if (ch == '\n' || col >= editor_cols) {
+            if (ch != '\n' && col >= editor_cols) {
+                // already advanced row for wrap path
+            } else {
+                if (logical_row >= *row_offset && row < editor_rows) row++;
+                col = 0;
+            }
+            logical_row++;
+        }
+        if (row >= editor_rows) break;
+    }
+
+    while (row < editor_rows) {
+        while (col < editor_cols) { vga_putchar(' '); col++; }
+        row++;
+        col = 0;
+    }
+
+    int cur_col = mp_index_to_col(text, len, cursor, editor_cols);
+    int draw_row = cur_row - *row_offset + 2; // two header lines
+    if (draw_row >= 2 && draw_row < 2 + editor_rows) {
+        move_cursor((uint32_t)cur_col, (uint32_t)draw_row);
+    } else {
+        move_cursor(0, 2);
+    }
+}
+
+void cmd_micropen(char args[][MAX_ARG_LEN], int argc) {
+    if (argc == 0) { println("Usage: micropen <filename>"); return; }
+
+    char text[FILE_SIZE];
+    int len = 0;
+    int cursor = 0;
+    int row_offset = 0;
+    bool ctrl_pressed = false;
+
+    if (fs_read(args[0], text, FILE_SIZE) < 0) {
+        text[0] = 0;
+    }
+    while (text[len] && len < FILE_SIZE - 1) len++;
+    cursor = len;
+
+    show_cursor();
+    while (1) {
+        mp_draw(args[0], text, len, cursor, &row_offset);
+        uint8_t sc = read_scancode();
+
+        if (sc == 0xE0) {
+            uint8_t ext = read_scancode();
+            if (ext == 0x1D) { ctrl_pressed = true; continue; }   // Right Ctrl down
+            if (ext == 0x9D) { ctrl_pressed = false; continue; }  // Right Ctrl up
+            if (ext & 0x80) continue;
+            if (ext == 0x4B && cursor > 0) cursor--; // left
+            else if (ext == 0x4D && cursor < len) cursor++; // right
+            else if (ext == 0x48) cursor = mp_move_up(text, len, cursor, 80); // up
+            else if (ext == 0x50) cursor = mp_move_down(text, len, cursor, 80); // down
+            continue;
+        }
+
+        // Match read_char() behavior for Shift handling first.
+        if (sc == LSHIFT || sc == RSHIFT) { shift_pressed = true; continue; }
+        if (sc == LSHIFT_RELEASE || sc == RSHIFT_RELEASE) { shift_pressed = false; continue; }
+
+        if (sc == 0x1D) { ctrl_pressed = true; continue; }   // Ctrl down
+        if (sc == 0x9D) { ctrl_pressed = false; continue; }  // Ctrl up
+        if (sc & 0x80) continue; // break code
+
+        if (ctrl_pressed && sc == 0x1F) { // Ctrl+S
+            text[len] = 0;
+            if (fs_write(args[0], text) < 0) println("save failed");
+            else println("saved");
+            sleep_ms(150);
+            continue;
+        }
+        if (ctrl_pressed && sc == 0x10) { // Ctrl+Q
+            clear_screen();
+            hide_cursor();
+            println("Exited micropen");
+            return;
+        }
+
+        if (sc == 0x0E) { // backspace
+            if (cursor > 0) {
+                for (int i = cursor - 1; i < len; i++) text[i] = text[i + 1];
+                cursor--;
+                len--;
+            }
+            continue;
+        }
+        if (sc == 0x1C) { // enter
+            if (len < FILE_SIZE - 1) {
+                for (int i = len; i >= cursor; i--) text[i + 1] = text[i];
+                text[cursor] = '\n';
+                cursor++;
+                len++;
+            }
+            continue;
+        }
+        char c = 0;
+        if (sc < sizeof(scancode_to_ascii_lower)) {
+            c = shift_pressed ? scancode_to_ascii_upper[sc] : scancode_to_ascii_lower[sc];
+        }
+        if (!c) continue;
+
+        if (len < FILE_SIZE - 1) {
+            for (int i = len; i >= cursor; i--) text[i + 1] = text[i];
+            text[cursor] = c;
+            cursor++;
+            len++;
+        }
+    }
 }
 
 
