@@ -111,6 +111,14 @@ Making wifi drivers/ making wifi in general (I'm so done for) 😭
 Making a filesystem (I'm so cooked)
 
 
+# Sources i learnt from:
+
+https://board.flatassembler.net/topic.php?t=7551 <br>
+https://en.cppreference.com/w/c/language/asm.html <br>
+https://en.wikipedia.org/wiki/INT_13H <br>
+https://wiki.osdev.org/Disk_access_using_the_BIOS_(INT_13h) <br>
+
+
 ---------
 
 # Why i deleted and re uploaded the repo:

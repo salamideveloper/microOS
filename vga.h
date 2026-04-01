@@ -296,6 +296,18 @@ uint32_t cpu_eflags() {
     return flags;
 }
 
+void move_cursor(uint32_t x, uint32_t y);
+
+static void vga_hw_cursor_sync(void) {
+    int32_t x = cursor_x;
+    int32_t y = cursor_y;
+    if (x < 0) x = 0;
+    if (y < 0) y = 0;
+    if (x >= VGA_WIDTH) x = VGA_WIDTH - 1;
+    if (y >= VGA_HEIGHT) y = VGA_HEIGHT - 1;
+    move_cursor((uint32_t)x, (uint32_t)y);
+}
+
 void clear_screen() {
     volatile uint8_t* vga = (volatile uint8_t*)VGA_MEMORY;
     for (int32_t i = 0; i < VGA_WIDTH * VGA_HEIGHT * 2; i += 2) {
@@ -304,13 +316,14 @@ void clear_screen() {
     }
     cursor_x = 0;
     cursor_y = 0;
+    vga_hw_cursor_sync();
 }
 
 void vga_putchar(char c) {
     volatile uint8_t* vga = (volatile uint8_t*)VGA_MEMORY;
-    if (c == '\n') { cursor_x = 0; cursor_y++; return; }
-    if (c == '\r') { cursor_x = 0; return; }
-    if (c == '\t') { cursor_x += 4; return; }
+    if (c == '\n') { cursor_x = 0; cursor_y++; vga_hw_cursor_sync(); return; }
+    if (c == '\r') { cursor_x = 0; vga_hw_cursor_sync(); return; }
+    if (c == '\t') { cursor_x += 4; vga_hw_cursor_sync(); return; }
     if (cursor_y >= VGA_HEIGHT) {
         for (int32_t i = 0; i < (VGA_HEIGHT - 1) * VGA_WIDTH * 2; i++)
             vga[i] = vga[i + VGA_WIDTH * 2];
@@ -325,6 +338,7 @@ void vga_putchar(char c) {
     vga[index + 1] = vga_color;
     cursor_x++;
     if (cursor_x >= VGA_WIDTH) { cursor_x = 0; cursor_y++; }
+    vga_hw_cursor_sync();
 }
 
 void print(const char* str) { while (*str) vga_putchar(*str++); }
@@ -440,6 +454,7 @@ void read_line(char* buffer, uint32_t max) {
                 uint32_t index = (cursor_y * VGA_WIDTH + cursor_x) * 2;
                 volatile uint8_t* vga = (volatile uint8_t*)VGA_MEMORY;
                 vga[index] = ' ';
+                vga_hw_cursor_sync();
             }
             continue;
         }
@@ -473,7 +488,7 @@ void show_cursor() {
 }
 
 void move_cursor(uint32_t x, uint32_t y) {
-    uint16_t pos = y * VGA_WIDTH + x;
+    uint16_t pos = (uint16_t)(y * VGA_WIDTH + x);
     io_outb(0x3D4, 0x0F); io_outb(0x3D5, (uint8_t)(pos & 0xFF));
     io_outb(0x3D4, 0x0E); io_outb(0x3D5, (uint8_t)((pos >> 8) & 0xFF));
 }
@@ -531,19 +546,27 @@ typedef struct {
     char name[NAME_LEN];
     char data[FILE_SIZE];
     int used;
+    int hidden;
 } File;
-
 static File fs[MAX_FILES];
+
+int fs_cwd_idx = -1;
+
+static int fs_is_int_key(const char* name) {
+    const char* p = "__int__";
+    for (int i = 0; p[i]; i++) {
+        if (!name[i] || name[i] != p[i]) return 0;
+    }
+    return 1;
+}
 
 typedef struct {
     uint32_t magic;
     uint32_t version;
     File files[MAX_FILES];
 } FsDiskImage;
-
 #define FS_SECTOR_COUNT ((sizeof(FsDiskImage) + FS_SECTOR_SIZE - 1) / FS_SECTOR_SIZE)
 static FsDiskImage fs_disk_image;
-
 static int ata_wait_not_busy() {
     for (uint32_t i = 0; i < 1000000; i++) {
         uint8_t status = io_inb(0x1F7);
@@ -551,7 +574,6 @@ static int ata_wait_not_busy() {
     }
     return -1;
 }
-
 static int ata_wait_data_ready() {
     for (uint32_t i = 0; i < 1000000; i++) {
         uint8_t status = io_inb(0x1F7);
@@ -560,7 +582,6 @@ static int ata_wait_data_ready() {
     }
     return -1;
 }
-
 static int disk_read_sector(uint32_t lba, uint8_t* buffer) {
     if (ata_wait_not_busy() < 0) return -1;
 
@@ -580,8 +601,7 @@ static int disk_read_sector(uint32_t lba, uint8_t* buffer) {
     }
     return 0;
 }
-
-static int disk_write_sector(uint32_t lba, const uint8_t* buffer) {
+static int disk_write_sector(uint32_t lba, const uint8_t* buffer) { // this gave me high cortisol.
     if (ata_wait_not_busy() < 0) return -1;
 
     io_outb(0x1F6, 0xE0 | ((lba >> 24) & 0x0F));
@@ -603,8 +623,10 @@ static int disk_write_sector(uint32_t lba, const uint8_t* buffer) {
 }
 
 void fs_init() {
-    for (int i = 0; i < MAX_FILES; i++)
+    for (int i = 0; i < MAX_FILES; i++) {
         fs[i].used = 0;
+        fs[i].hidden = 0;
+    }
 }
 
 int fs_save() {
@@ -614,7 +636,7 @@ int fs_save() {
 
     memset(&fs_disk_image, 0, sizeof(FsDiskImage));
     fs_disk_image.magic = FS_MAGIC;
-    fs_disk_image.version = 1;
+    fs_disk_image.version = 2;
     memcpy(fs_disk_image.files, fs, sizeof(fs));
 
     for (uint32_t s = 0; s < FS_SECTOR_COUNT; s++) {
@@ -628,7 +650,6 @@ int fs_save() {
 
     return 0;
 }
-
 int fs_load() {
     uint8_t sector[FS_SECTOR_SIZE];
     uint8_t* raw = (uint8_t*)&fs_disk_image;
@@ -643,7 +664,7 @@ int fs_load() {
         if (copy_len) memcpy(raw + byte_offset, sector, copy_len);
     }
 
-    if (fs_disk_image.magic != FS_MAGIC || fs_disk_image.version != 1) {
+    if (fs_disk_image.magic != FS_MAGIC || fs_disk_image.version != 2) {
         fs_init();
         return fs_save();
     }
@@ -658,7 +679,7 @@ int fs_load() {
     return 0;
 }
 
-int fs_write(const char* name, const char* data) {
+static int fs_write_with_visibility(const char* name, const char* data, int hidden) {
     for (int i = 0; i < MAX_FILES; i++) {
         if (fs[i].used) {
             int match = 1;
@@ -675,6 +696,7 @@ int fs_write(const char* name, const char* data) {
                     k++;
                 }
                 fs[i].data[k] = 0;
+                fs[i].hidden = hidden ? 1 : 0;
                 return fs_save();
             }
         }
@@ -689,6 +711,7 @@ int fs_write(const char* name, const char* data) {
             }
             fs[i].name[j] = 0;
             fs[i].used = 1;
+            fs[i].hidden = hidden ? 1 : 0;
 
             int k = 0;
             while (data[k] && k < FILE_SIZE - 1) {
@@ -701,7 +724,12 @@ int fs_write(const char* name, const char* data) {
     }
     return -1;
 }
-
+int fs_write(const char* name, const char* data) {
+    return fs_write_with_visibility(name, data, 0);
+}
+int fs_write_hidden(const char* name, const char* data) {
+    return fs_write_with_visibility(name, data, 1);
+}
 int fs_read(const char* name, char* out, int out_size) {
     if (!out || out_size <= 0) return -1;
     for (int i = 0; i < MAX_FILES; i++) {
@@ -726,7 +754,53 @@ int fs_read(const char* name, char* out, int out_size) {
     }
     return -1;
 }
-
+int fs_exists(const char* name) {
+    if (!name) return 0;
+    for (int i = 0; i < MAX_FILES; i++) {
+        if (!fs[i].used) continue;
+        int match = 1;
+        for (int j = 0; name[j] || fs[i].name[j]; j++) {
+            if (name[j] != fs[i].name[j]) {
+                match = 0;
+                break;
+            }
+        }
+        if (match) return 1;
+    }
+    return 0;
+}
+static void fs_int_key(const char* int_name, char* out_key) {
+    int k = 0;
+    const char* prefix = "__int__";
+    while (prefix[k] && k < NAME_LEN - 1) {
+        out_key[k] = prefix[k];
+        k++;
+    }
+    if (int_name) {
+        int j = 0;
+        while (int_name[j] && k < NAME_LEN - 1) {
+            out_key[k++] = int_name[j++];
+        }
+    }
+    out_key[k] = 0;
+}
+int fs_intwrite(const char* int_name, int32_t value) {
+    if (!int_name || !int_name[0]) return -1;
+    char key[NAME_LEN];
+    char valbuf[16];
+    fs_int_key(int_name, key);
+    itoa(value, valbuf);
+    return fs_write_hidden(key, valbuf);
+}
+int fs_intread(const char* int_name, int32_t* out_value) {
+    if (!int_name || !int_name[0] || !out_value) return -1;
+    char key[NAME_LEN];
+    char valbuf[16];
+    fs_int_key(int_name, key);
+    if (fs_read(key, valbuf, sizeof(valbuf)) < 0) return -1;
+    *out_value = atoi(valbuf);
+    return 0;
+}
 int fs_create(const char* name) {
     for (int i = 0; i < MAX_FILES; i++) {
         if (!fs[i].used) {
@@ -737,6 +811,7 @@ int fs_create(const char* name) {
             }
             fs[i].name[j] = 0;
             fs[i].used = 1;
+            fs[i].hidden = 0;
             fs[i].data[0] = 0;
             return fs_save();
         }
@@ -746,11 +821,13 @@ int fs_create(const char* name) {
 
 void fs_list() {
     for (int i = 0; i < MAX_FILES; i++) {
-        if (fs[i].used) {
+        if (fs[i].used && !fs[i].hidden) {
             print(fs[i].name);
             print("\n");
         }
     }
 }
+
+
 
 #endif

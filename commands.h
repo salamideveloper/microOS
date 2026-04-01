@@ -9,6 +9,8 @@
 #define MAX_ARGS     16
 #define MAX_ARG_LEN  64
 
+#include "filesys.h"
+
 void cmd_help(char args[][MAX_ARG_LEN], int argc);
 void cmd_clear(char args[][MAX_ARG_LEN], int argc);
 void cmd_meminfo(char args[][MAX_ARG_LEN], int argc);
@@ -23,6 +25,9 @@ void cmd_touch(char args[][MAX_ARG_LEN], int argc);
 void cmd_ls(char args[][MAX_ARG_LEN], int argc);
 void cmd_cat(char args[][MAX_ARG_LEN], int argc);
 void cmd_micropen(char args[][MAX_ARG_LEN], int argc);
+void cmd_cd(char args[][MAX_ARG_LEN], int argc);
+void cmd_mkdir(char args[][MAX_ARG_LEN], int argc);
+void cmd_supr_kernelprint(char args[][MAX_ARG_LEN], int argc);
 
 typedef struct {
     const char* name;
@@ -46,8 +51,30 @@ static Command command_table[] = {
     {"ls", "list every file", cmd_ls},
     {"cat", "print file content", cmd_cat},
     {"micropen", "tiny text editor", cmd_micropen},
+    {"setpassw", "set the password", setpassw},
     {0, 0, 0}
 };
+
+static Command supr_command_table[] = {
+    {"kernelprint", "example supr command", cmd_supr_kernelprint},
+    {0, 0, 0}
+};
+
+static bool supr_authenticate(void) {
+    char expected[FILE_SIZE];
+    if (fs_read("userfile_passw", expected, sizeof(expected)) < 0) {
+        println("could not verify password");
+        return false;
+    }
+    print("Password: ");
+    char entered[FILE_SIZE];
+    read_line(entered, sizeof(entered));
+    if (!streq(entered, expected)) {
+        println("Wrong.");
+        return false;
+    }
+    return true;
+}
 
 static bool str_equals(const char* a, const char* b) {
     while (*a && *b) {
@@ -78,6 +105,26 @@ void run_command(const char* input) {
     char cmd[64];
     char args[MAX_ARGS][MAX_ARG_LEN];
     int argc = parse_input(input, cmd, args);
+
+    if (str_equals(cmd, "supr")) {
+        if (argc < 1) {
+            println("Usage: supr <command> [args...]");
+            println("Password is required. Example: supr kernelprint");
+            return;
+        }
+        if (!supr_authenticate())
+            return;
+        for (uint32_t i = 0; supr_command_table[i].name; i++) {
+            if (str_equals(args[0], supr_command_table[i].name)) {
+                supr_command_table[i].fn(args + 1, argc - 1);
+                return;
+            }
+        }
+        print("Unknown supr command: ");
+        println(args[0]);
+        return;
+    }
+
     for (uint32_t i = 0; command_table[i].name; i++) {
         if (str_equals(cmd, command_table[i].name)) {
             command_table[i].fn(args, argc);
@@ -99,6 +146,15 @@ void cmd_help(char args[][MAX_ARG_LEN], int argc) {
         print(command_table[i].name);
         print(" - ");
         println(command_table[i].description);
+    }
+    println("");
+    println("Supr commands (prefix with 'supr', password required):");
+    println("--------------------");
+    for (uint32_t i = 0; supr_command_table[i].name; i++) {
+        print("  supr ");
+        print(supr_command_table[i].name);
+        print(" - ");
+        println(supr_command_table[i].description);
     }
     println("");
 }
@@ -155,6 +211,12 @@ void cmd_echo(char args[][MAX_ARG_LEN], int argc) {
     println("");
 }
 
+void cmd_supr_kernelprint(char args[][MAX_ARG_LEN], int argc) {
+    (void)args;
+    (void)argc;
+    println("hello from supr");
+}
+
 void cmd_color(char args[][MAX_ARG_LEN], int argc) {
     if (argc == 0) { println("Usage: color <0-9 or A-F>"); return; }
     uint8_t c = args[0][0];
@@ -205,6 +267,10 @@ void cmd_touch(char args[][MAX_ARG_LEN], int argc) {
     }
 }
 
+static bool is_protected_file(const char* name) {
+    return streq(name, "userfile_passw");
+}
+
 void cmd_ls(char args[][MAX_ARG_LEN], int argc) {
     (void)args; (void)argc; 
     fs_list();
@@ -212,6 +278,10 @@ void cmd_ls(char args[][MAX_ARG_LEN], int argc) {
 
 void cmd_cat(char args[][MAX_ARG_LEN], int argc) {
     if (argc == 0) { println("Usage: cat <filename>"); return; }
+    if (is_protected_file(args[0])) {
+        println("Access denied");
+        return;
+    }
     char data[FILE_SIZE];
     if (fs_read(args[0], data, FILE_SIZE) < 0) {
         println("File not found");
@@ -226,13 +296,25 @@ static int mp_clamp(int v, int lo, int hi) {
     return v;
 }
 
+static int mp_advance_col(int col, int width, char ch) {
+    if (ch == '\t') {
+        int next_tab = ((col / 4) + 1) * 4;
+        if (next_tab <= col) next_tab = col + 1;
+        if (next_tab > width) return width;
+        return next_tab;
+    }
+    col++;
+    if (col > width) return width;
+    return col;
+}
+
 static int mp_index_to_col(const char* text, int len, int idx, int width) {
     int col = 0;
     idx = mp_clamp(idx, 0, len);
     for (int i = 0; i < idx; i++) {
         if (text[i] == '\n') col = 0;
         else {
-            col++;
+            col = mp_advance_col(col, width, text[i]);
             if (col >= width) col = 0;
         }
     }
@@ -248,7 +330,7 @@ static int mp_cursor_row(const char* text, int len, int idx, int width) {
             row++;
             col = 0;
         } else {
-            col++;
+            col = mp_advance_col(col, width, text[i]);
             if (col >= width) {
                 row++;
                 col = 0;
@@ -284,9 +366,40 @@ static int mp_move_down(const char* text, int len, int idx, int width) {
     return next_start + col;
 }
 
+static int mp_row_start_index(const char* text, int len, int target_row, int width) {
+    if (target_row <= 0) return 0;
+    int row = 0;
+    int col = 0;
+    for (int i = 0; i < len; i++) {
+        if (text[i] == '\n') {
+            row++;
+            col = 0;
+            if (row == target_row) return i + 1;
+            continue;
+        }
+        col = mp_advance_col(col, width, text[i]);
+        if (col >= width) {
+            row++;
+            col = 0;
+            if (row == target_row) return i + 1;
+        }
+    }
+    return len;
+}
+
+static void mp_print_line_number(int logical_row) {
+    char buf[16];
+    utoa((uint32_t)(logical_row + 1), buf);
+    int pad = 4 - (int)strlen(buf);
+    while (pad-- > 0) vga_putchar(' ');
+    print(buf);
+    print(" |");
+}
+
 static void mp_draw(const char* filename, const char* text, int len, int cursor, int* row_offset) {
     const int editor_rows = 22;
-    const int editor_cols = 80;
+    const int gutter_cols = 6;
+    const int editor_cols = 80 - gutter_cols;
     int cur_row = mp_cursor_row(text, len, cursor, editor_cols);
 
     if (cur_row < *row_offset) *row_offset = cur_row;
@@ -298,54 +411,49 @@ static void mp_draw(const char* filename, const char* text, int len, int cursor,
     println(filename);
     println("^S save | ^Q quit | arrows move");
 
-    int row = 0;
-    int col = 0;
-    int logical_row = 0;
-    for (int i = 0; i < len; i++) {
-        char ch = text[i];
-        if (logical_row >= *row_offset && row < editor_rows) {
-            if (ch == '\n') {
-                while (col < editor_cols) { vga_putchar(' '); col++; }
-            } else {
-                vga_putchar(ch);
-                col++;
-                if (col >= editor_cols) {
-                    row++;
-                    col = 0;
-                    continue;
+    for (int row = 0; row < editor_rows; row++) {
+        int logical_row = *row_offset + row;
+        int start = mp_row_start_index(text, len, logical_row, editor_cols);
+        int col = 0;
+
+        mp_print_line_number(logical_row);
+
+        int i = start;
+        while (i < len && col < editor_cols) {
+            if (text[i] == '\n') break;
+            if (text[i] == '\t') {
+                int next_tab = ((col / 4) + 1) * 4;
+                while (col < editor_cols && col < next_tab) {
+                    vga_putchar(' ');
+                    col++;
                 }
-            }
-        }
-
-        if (ch == '\n' || col >= editor_cols) {
-            if (ch != '\n' && col >= editor_cols) {
-                // already advanced row for wrap path
             } else {
-                if (logical_row >= *row_offset && row < editor_rows) row++;
-                col = 0;
+                vga_putchar(text[i]);
+                col++;
             }
-            logical_row++;
+            i++;
         }
-        if (row >= editor_rows) break;
-    }
-
-    while (row < editor_rows) {
-        while (col < editor_cols) { vga_putchar(' '); col++; }
-        row++;
-        col = 0;
+        while (col < editor_cols) {
+            vga_putchar(' ');
+            col++;
+        }
     }
 
     int cur_col = mp_index_to_col(text, len, cursor, editor_cols);
     int draw_row = cur_row - *row_offset + 2; // two header lines
     if (draw_row >= 2 && draw_row < 2 + editor_rows) {
-        move_cursor((uint32_t)cur_col, (uint32_t)draw_row);
+        move_cursor((uint32_t)(gutter_cols + cur_col), (uint32_t)draw_row);
     } else {
-        move_cursor(0, 2);
+        move_cursor((uint32_t)gutter_cols, 2);
     }
 }
 
 void cmd_micropen(char args[][MAX_ARG_LEN], int argc) {
     if (argc == 0) { println("Usage: micropen <filename>"); return; }
+    if (is_protected_file(args[0])) {
+        println("Permission denied");
+        return;
+    }
 
     char text[FILE_SIZE];
     int len = 0;
@@ -371,8 +479,8 @@ void cmd_micropen(char args[][MAX_ARG_LEN], int argc) {
             if (ext & 0x80) continue;
             if (ext == 0x4B && cursor > 0) cursor--; // left
             else if (ext == 0x4D && cursor < len) cursor++; // right
-            else if (ext == 0x48) cursor = mp_move_up(text, len, cursor, 80); // up
-            else if (ext == 0x50) cursor = mp_move_down(text, len, cursor, 80); // down
+            else if (ext == 0x48) cursor = mp_move_up(text, len, cursor, 74); // up
+            else if (ext == 0x50) cursor = mp_move_down(text, len, cursor, 74); // down
             continue;
         }
 
@@ -393,7 +501,7 @@ void cmd_micropen(char args[][MAX_ARG_LEN], int argc) {
         }
         if (ctrl_pressed && sc == 0x10) { // Ctrl+Q
             clear_screen();
-            hide_cursor();
+            show_cursor();
             println("Exited micropen");
             return;
         }
@@ -412,6 +520,18 @@ void cmd_micropen(char args[][MAX_ARG_LEN], int argc) {
                 text[cursor] = '\n';
                 cursor++;
                 len++;
+            }
+            continue;
+        }
+        if (sc == 0x0F) { // tab -> spaces (prevents terminal tab control effects)
+            const int tab_spaces = 4;
+            if (len + tab_spaces <= FILE_SIZE - 1) {
+                for (int t = 0; t < tab_spaces; t++) {
+                    for (int i = len; i >= cursor; i--) text[i + 1] = text[i];
+                    text[cursor] = ' ';
+                    cursor++;
+                    len++;
+                }
             }
             continue;
         }
