@@ -1,15 +1,13 @@
-# <p1>MicroOS</p1>
-<img width="1080" height="1080" alt="micro os logo gimp" src="https://github.com/user-attachments/assets/07d2af49-5dbb-4661-bc4c-820b6020a2b7" />
-
-
-
-
+# <p1><b>MicroOS</b></p1>
 
  <br>
-------------------------------------------------------<br>
-MicroOS is a minimal project and educational OS made for maximum compatibility. It can run on both old and new CPU's powered by the X86 assembly instruction set for maximum compatibility and flexibility. It is mainly made for education and to be a sweet asset on my portfolio and i don't plan on making it a full mainstream OS. 
 
-<br><br><br>
+> [!NOTE]
+> MicroOS is a minimal project and educational OS made for maximum compatibility. It can run on both old and new CPU's powered by the X86 assembly instruction set for maximum compatibility and flexibility.
+> It is mainly made for education and to be a sweet asset on my portfolio.
+> i don't plan on making it a full mainstream OS. 
+
+<br>
 
 <h2> Stages: </h2>
 <h3> 1, Bootloader to load the further stages. This is at adress 0x7C00 because of the intel 8086, This was kept like that and its still the norm today.</h3>
@@ -71,11 +69,16 @@ Feel free to send out contribution request whenever you want. I'm sure this wont
 
 ---------
 
-<br><br><br>
+<br>
 
-# How to get to the assembly kernel?
+> [!NOTE]
+> To get to the assembly kernel,
+> The assembly kernel terminal is the first stage of the whole OS past the bootloader, Technically its still not even in the OS. To access it.
+> Open "kernel.asm" and find this line: ```StartAtC db 1```.
+> After finding it, Edit "1" to be "0", Which skips the part where it automatically goes to the C kernel and stays in assembly.
+> You can toggle it whenever you want, it doesn't remove anything.
 
-The assembly kernel terminal is the first stage of the whole OS past the bootloader, Technically its still not even in the OS. To access it, Open "kernel.asm" and find this line: ```StartAtC db 1```. After finding it, Edit "1" to be "0", Which skips the part where it automatically goes to the C kernel and stays in assembly. You can toggle it whenever you want, it doesn't remove anything.
+<br>
 
 <img width="729" height="92" alt="image" src="https://github.com/user-attachments/assets/5fc8c11d-8e81-4f36-9606-cb339dbd3ef0" />
 

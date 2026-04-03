@@ -68,8 +68,8 @@ kernel_main: ; finally we got rid of the macro's, if assembly macros didnt exist
     newlineprint "  /=====--[*]--=====\"
     newlineprint "  | !! MICRO OS !!  |"
     newlineprint "  | ASSEMBLY KERNEL |"
-    newlineprint "  | Codename:Hazel  |"
-    newlineprint "  | Adr: 0x8000     |"
+    newlineprint "  | Codename:Anata  |"
+    newlineprint "  |                 |"
     newlineprint "  \=====-------=====/"
     newlineprint " "
     newlineprint "  USE THE COMMAND: 'continue' TO GET INTO THE BETTER KERNEL."
@@ -126,7 +126,7 @@ cmd_continue:
 
     jmp 0x08:pm_enter
 
-msg_continue db "Switching to advanced mode...", 0
+msg_continue db "CPU switch", 0
 
 bits 32
 pm_enter:
@@ -178,7 +178,7 @@ protected_mode:
     mov ss, ax
     mov esp, 0x90000
 
-    call 0x50000        ; C kernel lives here now yipeeee
+    call 0x50000        ; C kernel lives here now, no one cares about the assembly kernel anymore, it is ass.
 
     cli
     hlt
